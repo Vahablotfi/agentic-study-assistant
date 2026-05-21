@@ -28,3 +28,8 @@ neo4j-logs/
 # Secrets
 credentials.json
 secrets.json
+
+# Ignore uploaded course materials but keep folder structure
+lecture-materials/*
+!lecture-materials/.gitkeep
+
