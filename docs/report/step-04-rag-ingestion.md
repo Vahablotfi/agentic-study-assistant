@@ -9,3 +9,11 @@ This extracted text will later be:
 - chunked into smaller segments,
 - converted into embeddings,
 - stored in Neo4j for Vector RAG retrieval.
+
+## Text Cleaning and Chunking
+
+After extracting text from PDFs, the text is lightly cleaned by normalizing whitespace and line breaks. This improves readability and helps produce more useful chunks for retrieval.
+
+The text is then split into overlapping chunks. Chunking is necessary because full lecture documents are too large to embed and retrieve as one unit. Smaller chunks make Vector RAG more precise.
+
+Each chunk stores metadata such as source file, week number and chunk index. This allows the system to filter or explain answers based on where the information came from.
