@@ -19,6 +19,7 @@ import os
 from dotenv import load_dotenv
 from neo4j import GraphDatabase
 from openai import OpenAI
+import requests
 
 load_dotenv()
 
@@ -150,6 +151,31 @@ Generate 5 high-quality study flashcards.
     return response.choices[0].message.content
 
 
+def send_flashcards_to_n8n(topic: str, flashcards: str) -> None:
+    """
+    Send generated flashcards to an n8n webhook.
+
+    This demonstrates workflow automation:
+    Python/RAG generates study material, then n8n receives it and can forward,
+    save, or process it.
+    """
+    webhook_url = os.getenv("N8N_FLASHCARD_WEBHOOK_URL")
+
+    if not webhook_url:
+        print("N8N_FLASHCARD_WEBHOOK_URL is not set. Skipping n8n send.")
+        return
+
+    payload = {
+        "topic": topic,
+        "flashcards": flashcards,
+        "source": "agentic-study-assistant",
+    }
+
+    response = requests.post(webhook_url, json=payload, timeout=10)
+    response.raise_for_status()
+
+    print("Flashcards sent to n8n successfully.")
+
 def main():
     """
     Main flashcard generation workflow.
@@ -174,6 +200,7 @@ def main():
         print("=" * 80)
 
         print(flashcards)
+        send_flashcards_to_n8n(topic, flashcards)
 
     finally:
         driver.close()
