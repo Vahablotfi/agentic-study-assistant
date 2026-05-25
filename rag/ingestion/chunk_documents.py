@@ -4,18 +4,18 @@ from pypdf import PdfReader
 
 PDF_FOLDER = Path("lecture-materials")
 CHUNK_SIZE = 1200
-CHUNK_OVERLAP = 200
+CHUNK_OVERLAP = 0
 
 
 def clean_text(text: str) -> str:
-    # Replace many spaces/tabs with one space
     text = re.sub(r"[ \t]+", " ", text)
-
-    # Replace too many newlines with max two
-    text = re.sub(r"\n{3,}", "\n\n", text)
-
-    # Remove spaces around newlines
     text = re.sub(r" *\n *", "\n", text)
+
+    # Fix excessive single-word line breaks from PDF extraction
+    text = re.sub(r"\n([a-zA-Z])\n", r" \1 ", text)
+
+    # Keep paragraph breaks, but remove too many empty lines
+    text = re.sub(r"\n{3,}", "\n\n", text)
 
     return text.strip()
 
@@ -40,17 +40,28 @@ def extract_text_from_pdf(pdf_file: Path) -> str:
 
 
 def chunk_text(text: str, chunk_size: int = CHUNK_SIZE, overlap: int = CHUNK_OVERLAP):
+    paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
+
     chunks = []
-    start = 0
+    current_chunk = ""
 
-    while start < len(text):
-        end = start + chunk_size
-        chunk = text[start:end].strip()
+    for paragraph in paragraphs:
+        if len(current_chunk) + len(paragraph) <= chunk_size:
+            current_chunk += paragraph + "\n\n"
+        else:
+            if current_chunk.strip():
+                chunks.append(current_chunk.strip())
 
-        if chunk:
-            chunks.append(chunk)
+            # Start new chunk with overlap from previous chunk
+            if overlap > 0 and chunks:
+                previous = chunks[-1]
+                overlap_text = previous[-overlap:]
+                current_chunk = overlap_text + "\n\n" + paragraph + "\n\n"
+            else:
+                current_chunk = paragraph + "\n\n"
 
-        start += chunk_size - overlap
+    if current_chunk.strip():
+        chunks.append(current_chunk.strip())
 
     return chunks
 
